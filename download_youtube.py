@@ -59,5 +59,11 @@ def download_file(filename):
     return send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
 
 
+# if __name__ == "__main__":
+#     app.run(debug=True)
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Gunakan port dari environment variable Render, default ke 5000 jika lokal
+    port = int(os.environ.get("PORT", 5000))
+    # Host harus 0.0.0.0 agar bisa diakses di internet
+    app.run(host="0.0.0.0", port=port)
