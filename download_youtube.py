@@ -1,28 +1,35 @@
-from flask import Flask, render_template, request, send_from_directory
-import yt_dlp
 import os
-import imageio_ffmpeg # Library tambahan agar FFmpeg terbaca otomatis
+import yt_dlp
+import imageio_ffmpeg
+from flask import Flask, render_template, request, send_file
 
 app = Flask(__name__)
 
-# Tentukan folder download yang aman untuk Render
+# Folder sementara yang diizinkan oleh Render
 DOWNLOAD_FOLDER = "/tmp"
 
-# Ambil path FFmpeg secara otomatis dari library imageio-ffmpeg
+# Mendapatkan lokasi FFmpeg secara otomatis
 FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
 
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
 def download_youtube_to_mpeg(url):
+    # Kita tetapkan nama file statis agar tidak error karena spasi/karakter unik
+    target_filename = 'video_download.mp4'
+    final_path = os.path.join(DOWNLOAD_FOLDER, target_filename)
+    
+    # Hapus file lama jika ada agar tidak bentrok
+    if os.path.exists(final_path):
+        os.remove(final_path)
+
     ydl_opts = {
         'format': 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best',
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
+        'outtmpl': final_path,  # Simpan langsung ke /tmp/video_download.mp4
         'noplaylist': True,
-        'concurrent_fragment_downloads': 5,
         'merge_output_format': 'mp4',
-        # PERBAIKAN: Beritahu yt-dlp di mana lokasi FFmpeg berada
-        'ffmpeg_location': FFMPEG_PATH, 
+        'ffmpeg_location': FFMPEG_PATH,
+        'overwrites': True,
         'postprocessors': [
             {
                 'key': 'FFmpegVideoRemuxer',
@@ -42,11 +49,8 @@ def download_youtube_to_mpeg(url):
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info)
-        # Pastikan kita mengembalikan nama file yang benar-benar ada (ekstensi .mp4)
-        base_name = os.path.splitext(os.path.basename(filename))[0]
-        return f"{base_name}.mp4"
+        ydl.download([url])
+        return target_filename
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -58,16 +62,19 @@ def index():
                 file_name = download_youtube_to_mpeg(url)
             except Exception as e:
                 print(f"Error detail: {e}")
-                return f"Gagal mengunduh video. Pastikan link benar. Error: {e}", 500
+                return f"Gagal mengunduh video. Error: {e}", 500
 
     return render_template("index.html", file_name=file_name)
 
 @app.route("/download/<filename>")
 def download_file(filename):
-    # Mengambil file dari /tmp
-    return send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
+    # Menggunakan send_file karena lebih stabil untuk folder /tmp
+    path_to_file = os.path.join(DOWNLOAD_FOLDER, filename)
+    if os.path.exists(path_to_file):
+        return send_file(path_to_file, as_attachment=True)
+    else:
+        return "File tidak ditemukan. Silakan coba klik download lagi.", 404
 
 if __name__ == "__main__":
-    # Binding Host dan Port untuk Render
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
