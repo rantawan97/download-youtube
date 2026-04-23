@@ -34,7 +34,7 @@ def download_youtube_to_mpeg(url):
         
         # --- PERBAIKAN DI SINI ---
         # Membaca cookies jika file tersedia
-        'cookiefile': 'youtube.com_cookies.txt' if os.path.exists('youtube.com_cookies.txt') else None,
+        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
         
         # Menyamarkan identitas sebagai browser asli
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
