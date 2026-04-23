@@ -23,28 +23,26 @@ def download_youtube_to_mpeg(url):
     if os.path.exists(final_path):
         os.remove(final_path)
 
+    
     ydl_opts = {
         'format': 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best',
-        'outtmpl': final_path,  # Simpan langsung ke /tmp/video_download.mp4
+        'outtmpl': final_path,
         'noplaylist': True,
         'merge_output_format': 'mp4',
         'ffmpeg_location': FFMPEG_PATH,
         'overwrites': True,
+        
+        # --- PERBAIKAN DI SINI ---
+        # Membaca cookies jika file tersedia
+        'cookiefile': 'youtube.com_cookies.txt' if os.path.exists('youtube.com_cookies.txt') else None,
+        
+        # Menyamarkan identitas sebagai browser asli
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        # -------------------------
+
         'postprocessors': [
-            {
-                'key': 'FFmpegVideoRemuxer',
-                'preferedformat': 'mp4',
-            },
-            {
-                'key': 'FFmpegVideoConvertor',
-                'preferedformat': 'mp4',
-            }
-        ],
-        'postprocessor_args': [
-            '-c:v', 'libx264',
-            '-preset', 'ultrafast',
-            '-crf', '28',
-            '-c:a', 'aac'
+            {'key': 'FFmpegVideoRemuxer', 'preferedformat': 'mp4'},
+            {'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}
         ],
     }
 
